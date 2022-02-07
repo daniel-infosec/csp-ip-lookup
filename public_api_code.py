@@ -105,7 +105,15 @@ def lambda_handler(event, context):
     print("Setting list of IPs")
     print(sql_input)
     
-    cur.execute(sql_input)
+    try:
+        cur.execute(sql_input)
+    except Exception as e:
+        print("Failed to set var")
+        print(e)
+        return {
+            'statusCode': 503,
+            'body': "Failed to execute"
+        }
     
     if 'cached' in api_input.keys() and api_input['cached'].lower() == 'y':
         print('Using cached table')
@@ -186,17 +194,33 @@ from
  
     print("Executing ")
     
-    cur.execute(sql_retrieve)
-    
-    df = cur.fetchall()
+    try:
+        cur.execute(sql_retrieve)
+    except Exception as e:
+        print("Failed to execute query")
+        print(e)
+        return {
+            'statusCode': 503,
+            'body': "Failed to execute"
+        }
     
     res_obj = []
     
-    for row in df:
-        json_row = json.loads(row[0])
-        res_obj.append(json_row)
-    
-    print(res_obj)
+    try:
+        df = cur.fetchall()
+        
+        for row in df:
+            json_row = json.loads(row[0])
+            res_obj.append(json_row)
+        print(res_obj)
+        
+    except Exception as e:
+        print("Failed to parse query result")
+        print(e)
+        return {
+            'statusCode': 503,
+            'body': "Failed to execute"
+        }
     
     return {
         'statusCode': 200,
