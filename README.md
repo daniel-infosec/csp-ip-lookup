@@ -36,3 +36,7 @@ curl -X POST https://csp-ip-lookup.catscrdl.io/collectCSPsPublicAPI \
     , "cached": "y"
 }'
 ```
+
+## Diagram
+
+![Architecture Diagram](csp-lookup-diagram.png)
