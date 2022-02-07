@@ -37,6 +37,12 @@ curl -X POST https://csp-ip-lookup.catscrdl.io/collectCSPsPublicAPI \
 }'
 ```
 
-## Diagram
+## Diagram and Architecture
+
+Snowflake serves as the center of the operation (I work at Snowflake, but I do really enjoy using it). I built an external function so that when I do `select collect_csp_cidr_ranges()`, the code in `private_api_code.py` runs and reaches out to various sources to pull the list of latest public IP addresses from the 3 major CSPs. Additionally, a task runs every 15 minutes to run this code and update a table (also stored in Snowflake).
+
+Retool queries Snowflake directly and runs a query very similar to the one in public_api_code.py to search the public IP ranges.
+
+The API uses AWS API Gateway to run `public_api_code.py` which uses the Snowflake REST API to query either thetable or call the external function.
 
 ![Architecture Diagram](csp-lookup-diagram.png)
