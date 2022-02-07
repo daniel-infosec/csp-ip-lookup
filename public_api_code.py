@@ -8,8 +8,8 @@ from botocore.exceptions import ClientError
 
 def get_secret():
 
-    secret_name = "XXXXXXXXX"
-    region_name = "XXXXXXXXX"
+    secret_name = "XXXXXXXX"
+    region_name = "XXXXXXXX"
 
     # Create a Secrets Manager client
     session = boto3.session.Session()
@@ -130,13 +130,13 @@ helper_three as (
     select
         array_val[3]::varchar as csp,
         case
-            when array_val [1] != '' then array_val[1]::varchar
-            else NULL
-        end as service,
-        case
-            when array_val [2] != '' then array_val[2]::varchar
+            when array_val[1] != '' then array_val[1]::varchar
             else NULL
         end as region,
+        case
+            when array_val[2] != '' then array_val[2]::varchar
+            else NULL
+        end as service,
         array_val[0]::varchar as ip_range,
         array_val[4]::varchar as date
     from
@@ -161,13 +161,13 @@ helper_four as (
             CASE WHEN ARRAY_SIZE(ARRAY_AGG(csp)) = 0 then OBJECT_CONSTRUCT('data', NULL) else
             OBJECT_CONSTRUCT(
                 'cloud',
-                CASE WHEN ARRAY_SIZE(array_agg(csp::varchar)) = 1 then ARRAY_AGG(CSP)[0] else ARRAY_AGG(CSP) end,
+                max(csp),
                 'service',
-                CASE WHEN ARRAY_SIZE(array_agg(service::varchar)) = 1 then ARRAY_AGG(service)[0] else ARRAY_AGG(service) end,
+                array_agg(service),
                 'region',
-                CASE WHEN ARRAY_SIZE(array_agg(region::varchar)) = 1 then ARRAY_AGG(region)[0] else ARRAY_AGG(region) end,
+                array_agg(region),
                 'ip_range',
-                CASE WHEN ARRAY_SIZE(array_agg(ip_range::varchar)) = 1 then ARRAY_AGG(ip_range)[0] else ARRAY_AGG(ip_range) end,
+                array_agg(ip_range),
                 'date',
                 max(date)
             ) end

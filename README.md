@@ -46,17 +46,17 @@ Output is properly formatted JSON structured as follows:
   {
     "ip_address": ip_address,
     "data": {
-      "cloud", cloud
-      "region", [regions]|region,
-      "service", [services]|service,
-      "ip_range", [ip_ranges]|ip_range,
+      "cloud", cloud,
+      "region", [regions],
+      "service", [services],
+      "ip_range", [ip_ranges],
       "date",date
     }
   }
 ]
 ```
 
-If one or more regions, services, or ranges match, the JSON object will return a list. If only one matches, it'll be a string.
+If one or more regions, services, or ranges match, the JSON object will return a list. If only one matches, it will be a list with one element.
 
 ## Diagram and Architecture
 
@@ -64,7 +64,7 @@ Snowflake serves as the center of the operation (I work at Snowflake, but I do r
 
 Retool queries Snowflake directly and runs a query very similar to the one in public_api_code.py to search the public IP ranges.
 
-The API uses AWS API Gateway to run `public_api_code.py` which uses the Snowflake REST API to query either thetable or call the external function.
+The API uses AWS API Gateway to run `public_api_code.py` which uses the Snowflake REST API to query either the table or call the external function.
 
 ![Architecture Diagram](csp-lookup-diagram.png)
 
