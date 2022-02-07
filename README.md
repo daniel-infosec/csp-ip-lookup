@@ -41,6 +41,7 @@ curl -X POST https://csp-ip-lookup.catscrdl.io/collectCSPsPublicAPI \
 
 Output is properly formatted JSON structured as follows:
 
+```
 [
   {
     "ip_address": ip_address,
@@ -53,6 +54,7 @@ Output is properly formatted JSON structured as follows:
     }
   }
 ]
+```
 
 If one or more regions, services, or ranges match, the JSON object will return a list. If only one matches, it'll be a string.
 
@@ -72,4 +74,4 @@ Aidan Steele (https://twitter.com/__steele) for a code review and the initial re
 
 Paul Schwarzenberger (https://twitter.com/paulschwarzen) for feedback on the API output
 
-You can find me @daniel_infosec
+You can find me at https://twitter.com/Daniel_Infosec
