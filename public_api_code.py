@@ -8,8 +8,8 @@ from botocore.exceptions import ClientError
 
 def get_secret():
 
-    secret_name = "XXXXXXXX"
-    region_name = "XXXXXXXX"
+    secret_name = "XXXXXXXXX"
+    region_name = "XXXXXXXXX"
 
     # Create a Secrets Manager client
     session = boto3.session.Session()
@@ -107,56 +107,82 @@ def lambda_handler(event, context):
     
     cur.execute(sql_input)
     
-    sql_retrieve = ''
-    
     if 'cached' in api_input.keys() and api_input['cached'].lower() == 'y':
         print('Using cached table')
-        
-        sql_retrieve = """with helper as (select * from csp_public_ips.public.public_csp_ranges as csp_ranges),
-helper_two as (select split(value, ',') as array_val from helper, lateral flatten(csp_ranges)),
-helper_three as (select array_val[3]::varchar as csp
-    , case when array_val[1] != '' then array_val[1]::varchar else NULL end as service
-    , case when array_val[2] != '' then array_val[2]::varchar else NULL end as region
-    , array_val[0]::varchar as ip_range
-    , array_val[4]::varchar as date
-     from helper_two),
-helper_input as  (select parse_json($var1) as input),
-helper_input_two as (select * from helper_input, lateral flatten(input)),
-helper_four as (
-select array_agg(distinct csp::varchar) as csp,  array_agg(distinct service::varchar) as service, array_agg(distinct region::varchar) as region, ip_range, max(date::varchar) as date from helper_three
-  inner join helper_input_two on parse_ip(VALUE, 'inet')['ipv4'] between parse_ip(ip_range, 'cidr')['ipv4_range_start']
-         and parse_ip(ip_range, 'cidr')['ipv4_range_end']
- group by ip_range)
- select case when array_size(csp) = 1 then csp[0] else csp end as csp
- , case when array_size(service) = 1 then service[0] else service end as service
- , case when array_size(region) = 1 then region[0] else region end as region 
- , ip_range
- , date
- from helper_four"""
+        select_table = '* from csp_public_ips.public.public_csp_ranges'
      
     else:
         print('Using live data')
-        sql_retrieve = """with helper as (select csp_public_ips.public.collect_csp_cidr_ranges() as csp_ranges),
-helper_two as (select split(value, ',') as array_val from helper, lateral flatten(csp_ranges)),
-helper_three as (select array_val[3]::varchar as csp
-    , case when array_val[1] != '' then array_val[1]::varchar else NULL end as service
-    , case when array_val[2] != '' then array_val[2]::varchar else NULL end as region
-    , array_val[0]::varchar as ip_range
-    , array_val[4]::varchar as date
-     from helper_two),
-helper_input as  (select parse_json($var1) as input),
-helper_input_two as (select * from helper_input, lateral flatten(input)),
+        select_table = 'csp_public_ips.public.collect_csp_cidr_ranges()'
+        
+    sql_retrieve = f"""with helper as (
+    select
+        {select_table} as csp_ranges
+),
+helper_two as (
+    select
+        split(value, ',') as array_val
+    from
+        helper,
+        lateral flatten(csp_ranges)
+),
+helper_three as (
+    select
+        array_val[3]::varchar as csp,
+        case
+            when array_val [1] != '' then array_val[1]::varchar
+            else NULL
+        end as service,
+        case
+            when array_val [2] != '' then array_val[2]::varchar
+            else NULL
+        end as region,
+        array_val[0]::varchar as ip_range,
+        array_val[4]::varchar as date
+    from
+        helper_two
+),
+helper_input as (
+    select
+        parse_json($var1) as input
+),
+helper_input_two as (
+    select
+        *
+    from
+        helper_input,
+        lateral flatten(input)
+),
 helper_four as (
-select array_agg(distinct csp::varchar) as csp,  array_agg(distinct service::varchar) as service, array_agg(distinct region::varchar) as region, ip_range, max(date::varchar) as date from helper_three
-  inner join helper_input_two on parse_ip(VALUE, 'inet')['ipv4'] between parse_ip(ip_range, 'cidr')['ipv4_range_start']
-         and parse_ip(ip_range, 'cidr')['ipv4_range_end']
- group by ip_range)
- select case when array_size(csp) = 1 then csp[0] else csp end as csp
- , case when array_size(service) = 1 then service[0] else service end as service
- , case when array_size(region) = 1 then region[0] else region end as region 
- , ip_range
- , date
- from helper_four"""
+    select
+        OBJECT_CONSTRUCT(
+            'ip_address',
+            value::varchar, 'data',
+            CASE WHEN ARRAY_SIZE(ARRAY_AGG(csp)) = 0 then OBJECT_CONSTRUCT('data', NULL) else
+            OBJECT_CONSTRUCT(
+                'cloud',
+                CASE WHEN ARRAY_SIZE(array_agg(csp::varchar)) = 1 then ARRAY_AGG(CSP)[0] else ARRAY_AGG(CSP) end,
+                'service',
+                CASE WHEN ARRAY_SIZE(array_agg(service::varchar)) = 1 then ARRAY_AGG(service)[0] else ARRAY_AGG(service) end,
+                'region',
+                CASE WHEN ARRAY_SIZE(array_agg(region::varchar)) = 1 then ARRAY_AGG(region)[0] else ARRAY_AGG(region) end,
+                'ip_range',
+                CASE WHEN ARRAY_SIZE(array_agg(ip_range::varchar)) = 1 then ARRAY_AGG(ip_range)[0] else ARRAY_AGG(ip_range) end,
+                'date',
+                max(date)
+            ) end
+        )
+    from
+        helper_input_two
+        left outer join helper_three on parse_ip(VALUE, 'inet') ['ipv4'] between parse_ip(ip_range, 'cidr') ['ipv4_range_start']
+        and parse_ip(ip_range, 'cidr') ['ipv4_range_end']
+    group by
+        value
+)
+select
+    *
+from
+    helper_four"""
  
     print("Executing ")
     
@@ -164,13 +190,15 @@ select array_agg(distinct csp::varchar) as csp,  array_agg(distinct service::var
     
     df = cur.fetchall()
     
-    df_str = str(df)
+    res_obj = []
     
-    df_str = df_str.replace('"', '')
+    for row in df:
+        json_row = json.loads(row[0])
+        res_obj.append(json_row)
     
-    res = df_str
+    print(res_obj)
     
     return {
         'statusCode': 200,
-        'body': json.dumps(res)
+        'body': json.dumps(res_obj)
     }
