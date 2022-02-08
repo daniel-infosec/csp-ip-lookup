@@ -51,7 +51,7 @@ def lambda_handler(event, context):
         for value in values:
             prefixes = value['properties']['addressPrefixes']
             for prefix in prefixes:
-                updated_ip_ranges.append(prefix + ',' + value['properties']['systemService'] + ',' + value['properties']['region'] + ',azure,' + d1)
+                updated_ip_ranges.append(prefix + ',' + value['properties']['region'] + ',' + value['properties']['systemService']  + ',azure,' + d1)
     except Exception as e:
         #print(response.text)
         print(e)
@@ -68,7 +68,7 @@ def lambda_handler(event, context):
         for value in values:
             prefixes = value['properties']['addressPrefixes']
             for prefix in prefixes:
-                updated_ip_ranges.append(prefix + ',' + value['properties']['systemService'] + ',' + value['properties']['region'] + ',azure_gov,' + d1)
+                updated_ip_ranges.append(prefix + ',' + value['properties']['region'] + ',' + value['properties']['systemService'] + ',azure_gov,' + d1)
     except Exception as e:
         print(e)
         print('No new Azure Gov ranges')
@@ -86,7 +86,7 @@ def lambda_handler(event, context):
         for value in values:
             prefixes = value['properties']['addressPrefixes']
             for prefix in prefixes:
-                updated_ip_ranges.append(prefix + ',' + value['properties']['systemService'] + ',' + value['properties']['region'] + ',azure_cn,' + d1)
+                updated_ip_ranges.append(prefix + ',' + value['properties']['region'] + ',' + value['properties']['systemService'] + ',azure_cn,' + d1)
     except Exception as e:
         print(e)
         print('No new Azure CN ranges')
