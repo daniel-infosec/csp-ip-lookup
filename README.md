@@ -22,7 +22,7 @@ curl -X POST https://csp-ip-lookup.catscrdl.io/collectCSPsPublicAPI \
 
 ## Caching
 
-You can choose to set an optional flag in the JSON body called "cached". If you set this to "y", then the lookup will use a cached value of the CSP IP ranges. This cache updates about every 15 minutes. If this value is "n" or otherwise omitted, it'll use a live lookup. The live lookup may be more accurate but it will also take longer.
+You can choose to set an optional flag in the JSON body called "cached". It will use the cached version by default. This cache updates about every 15 minutes. If this value is `false`, it'll use a live lookup. The live lookup may be more accurate but it will also take longer.
 
 ```
 curl -X POST https://csp-ip-lookup.catscrdl.io/collectCSPsPublicAPI \
@@ -33,7 +33,7 @@ curl -X POST https://csp-ip-lookup.catscrdl.io/collectCSPsPublicAPI \
       "35.134.66.241",
       "99.87.32.45"
     ]
-    , "cached": "y"
+    , "cached": false
 }'
 ```
 

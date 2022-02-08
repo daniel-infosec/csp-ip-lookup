@@ -115,13 +115,13 @@ def lambda_handler(event, context):
             'body': "Failed to execute"
         }
     
-    if 'cached' in api_input.keys() and api_input['cached'].lower() == 'y':
-        print('Using cached table')
-        select_table = '* from csp_public_ips.public.public_csp_ranges'
-     
-    else:
+    if 'cached' in api_input.keys() and (api_input['cached'] == 'n' or api_input['cached'] == False):
         print('Using live data')
         select_table = 'csp_public_ips.public.collect_csp_cidr_ranges()'
+     
+    else:
+        print('Using cached table')
+        select_table = '* from csp_public_ips.public.public_csp_ranges'
         
     sql_retrieve = f"""with helper as (
     select
@@ -171,11 +171,11 @@ helper_four as (
                 'cloud',
                 max(csp),
                 'service',
-                array_agg(service),
+                array_agg(distinct service),
                 'region',
-                array_agg(region),
+                array_agg(distinct region),
                 'ip_range',
-                array_agg(ip_range),
+                array_agg(distinct ip_range),
                 'date',
                 max(date)
             ) end
